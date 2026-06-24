@@ -3,6 +3,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { ConversaCard } from "@/components/ConversaCard";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
+import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { MessageSquare, Bot, Search } from "lucide-react";
 
 const EMPRESA_ID = import.meta.env.VITE_EMPRESA_ID || "default";
@@ -114,10 +115,12 @@ export default function ConversasPage() {
         </div>
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {conversasFiltradas.length === 0 ? (
-            <div className="text-center py-12 text-text-muted">
-              <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Nenhuma conversa encontrada</p>
-            </div>
+            conversas.length === 0 ? null : (
+              <div className="text-center py-12 text-text-muted">
+                <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Nenhuma conversa encontrada</p>
+              </div>
+            )
           ) : (
             conversasFiltradas.map((c) => (
               <ConversaCard
@@ -175,6 +178,8 @@ export default function ConversasPage() {
           </div>
           <ChatInput onSend={handleSend} modoIA={modoIA} onToggleModo={handleToggleStatus} />
         </div>
+      ) : conversas.length === 0 ? (
+        <WelcomeScreen />
       ) : (
         <div className="flex-1 flex items-center justify-center text-text-muted">
           <div className="text-center">

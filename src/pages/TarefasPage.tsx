@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/stores/appStore";
-
-const EMPRESA_ID = import.meta.env.VITE_EMPRESA_ID || "default";
+import { useToastStore } from "@/stores/toastStore";
 import {
   Calendar,
   Plus,
@@ -11,14 +10,19 @@ import {
   XCircle,
   Clock,
   Filter,
+  Loader2,
 } from "lucide-react";
+
+const EMPRESA_ID = import.meta.env.VITE_EMPRESA_ID || "default";
 
 type FiltroStatus = "todas" | "pendente" | "enviado" | "cancelado" | "falhou";
 
 export default function TarefasPage() {
-  const { tarefas, addTarefa, updateTarefaStatus } = useAppStore();
+  const { tarefas, carregarTarefas, addTarefa, updateTarefaStatus, loadingTarefas } = useAppStore();
+  const { addToast } = useToastStore();
   const [filtro, setFiltro] = useState<FiltroStatus>("todas");
   const [mostrarNova, setMostrarNova] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { carregarTarefas(EMPRESA_ID); }, []);
   const [novoTitulo, setNovoTitulo] = useState("");
@@ -28,25 +32,41 @@ export default function TarefasPage() {
 
   const filtradas = filtro === "todas" ? tarefas : tarefas.filter((t) => t.status === filtro);
 
-  const handleNovaTarefa = (e: React.FormEvent) => {
+  const handleNovaTarefa = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!novoTitulo.trim() || !novaData) return;
-    addTarefa({
-      id: `tar-${Date.now()}`,
-      empresa_id: "emp-1",
-      conversa_id: null,
-      titulo: novoTitulo,
-      descricao: novaDescricao,
-      data_disparo: new Date(novaData).toISOString(),
-      status: "pendente",
-      executar_via_ia: novaIa,
-      created_at: new Date().toISOString(),
-    });
-    setNovoTitulo("");
-    setNovaDescricao("");
-    setNovaData("");
-    setNovaIa(true);
-    setMostrarNova(false);
+    setSubmitting(true);
+    try {
+      await addTarefa({
+        id: `tar-${Date.now()}`,
+        empresa_id: "emp-1",
+        conversa_id: null,
+        titulo: novoTitulo,
+        descricao: novaDescricao,
+        data_disparo: new Date(novaData).toISOString(),
+        status: "pendente",
+        executar_via_ia: novaIa,
+        created_at: new Date().toISOString(),
+      });
+      addToast("success", "Tarefa agendada com sucesso!");
+      setNovoTitulo("");
+      setNovaDescricao("");
+      setNovaData("");
+      setNovaIa(true);
+      setMostrarNova(false);
+    } catch {
+      addToast("error", "Erro ao agendar tarefa");
+    }
+    setSubmitting(false);
+  };
+
+  const handleStatus = async (id: string, status: "enviado" | "cancelado") => {
+    try {
+      await updateTarefaStatus(id, status);
+      addToast("success", `Tarefa ${status === "enviado" ? "concluída" : "cancelada"}`);
+    } catch {
+      addToast("error", "Erro ao atualizar tarefa");
+    }
   };
 
   const statusConfig = {
@@ -65,6 +85,23 @@ export default function TarefasPage() {
       hour: "2-digit",
       minute: "2-digit",
     });
+  }
+
+  if (loadingTarefas) {
+    return (
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="h-7 w-48 bg-surface rounded animate-pulse mb-4" />
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-surface rounded-xl border border-border p-4">
+              <div className="h-5 w-40 bg-surface-hover rounded animate-pulse mb-2" />
+              <div className="h-4 w-56 bg-surface-hover rounded animate-pulse mb-2" />
+              <div className="h-3 w-32 bg-surface-hover rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -159,8 +196,10 @@ export default function TarefasPage() {
             <div className="flex gap-2 pt-2">
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
+                disabled={submitting}
+                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2 disabled:opacity-60"
               >
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
                 Agendar Tarefa
               </button>
               <button
@@ -216,7 +255,7 @@ export default function TarefasPage() {
             return (
               <div
                 key={tarefa.id}
-                className="bg-surface rounded-xl border border-border p-4"
+                className="bg-surface rounded-xl border border-border p-4 hover:border-primary/20 transition-colors"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -246,14 +285,14 @@ export default function TarefasPage() {
                     {tarefa.status === "pendente" && (
                       <>
                         <button
-                          onClick={() => updateTarefaStatus(tarefa.id, "enviado")}
+                          onClick={() => handleStatus(tarefa.id, "enviado")}
                           className="p-2 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-colors"
                           title="Marcar como concluído"
                         >
                           <CheckCircle2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => updateTarefaStatus(tarefa.id, "cancelado")}
+                          onClick={() => handleStatus(tarefa.id, "cancelado")}
                           className="p-2 rounded-lg bg-text-muted/20 text-text-muted hover:bg-text-muted/30 transition-colors"
                           title="Cancelar"
                         >

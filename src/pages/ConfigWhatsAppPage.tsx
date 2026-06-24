@@ -1,5 +1,7 @@
 import { useAppStore } from "@/stores/appStore";
-import { MessageCircle, Phone, Globe, Key, Wifi, WifiOff, CheckCircle2, Save } from "lucide-react";
+import { useToastStore } from "@/stores/toastStore";
+import { MessageCircle, Phone, Globe, Key, Wifi, WifiOff, CheckCircle2, Save, Loader2 } from "lucide-react";
+import { useState } from "react";
 
 const statusIcon = {
   offline: WifiOff,
@@ -15,17 +17,26 @@ const statusColor = {
 
 export default function ConfigWhatsAppPage() {
   const { whatsapp, updateWhatsapp } = useAppStore();
+  const { addToast } = useToastStore();
+  const [saving, setSaving] = useState(false);
   const StatusIcon = statusIcon[whatsapp.status_conexao];
 
-  const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSaving(true);
     const form = new FormData(e.currentTarget);
-    updateWhatsapp({
-      webhook_url: form.get("webhook_url") as string,
-      verify_token: form.get("verify_token") as string,
-      numero_conectado: form.get("numero_conectado") as string,
-      status_conexao: form.get("status_conexao") as "offline" | "online" | "atestado",
-    });
+    try {
+      updateWhatsapp({
+        webhook_url: form.get("webhook_url") as string,
+        verify_token: form.get("verify_token") as string,
+        numero_conectado: form.get("numero_conectado") as string,
+        status_conexao: form.get("status_conexao") as "offline" | "online" | "atestado",
+      });
+      addToast("success", "Configuração do WhatsApp salva!");
+    } catch {
+      addToast("error", "Erro ao salvar configuração");
+    }
+    setSaving(false);
   };
 
   return (
@@ -99,10 +110,11 @@ export default function ConfigWhatsAppPage() {
 
             <button
               type="submit"
-              className="w-full py-2.5 bg-primary/20 text-primary rounded-lg text-sm font-medium hover:bg-primary/30 transition-colors flex items-center justify-center gap-2"
+              disabled={saving}
+              className="w-full py-2.5 bg-primary/20 text-primary rounded-lg text-sm font-medium hover:bg-primary/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              <Save className="w-4 h-4" />
-              Salvar Configuração
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? "Salvando..." : "Salvar Configuração"}
             </button>
           </form>
         </div>

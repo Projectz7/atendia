@@ -1,7 +1,11 @@
-import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
+import { useAuthStore } from "@/stores/authStore";
+import { ToastContainer } from "@/components/Toast";
+import { Loader2 } from "lucide-react";
 
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const ConversasPage = lazy(() => import("@/pages/ConversasPage"));
 const CampanhasPage = lazy(() => import("@/pages/CampanhasPage"));
 const TarefasPage = lazy(() => import("@/pages/TarefasPage"));
@@ -12,16 +16,40 @@ const ConfigMCPPage = lazy(() => import("@/pages/ConfigMCPPage"));
 function Loading() {
   return (
     <div className="flex-1 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
     </div>
   );
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, initialized } = useAuthStore();
+
+  if (!initialized || loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
+  const initialize = useAuthStore((s) => s.initialize);
+
+  useEffect(() => { initialize(); }, [initialize]);
+
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
-        <Route element={<Layout />}>
+        <Route path="/login" element={<Suspense fallback={<Loading />}><LoginPage /></Suspense>} />
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route index element={<Suspense fallback={<Loading />}><ConversasPage /></Suspense>} />
           <Route path="/campanhas" element={<Suspense fallback={<Loading />}><CampanhasPage /></Suspense>} />
           <Route path="/tarefas" element={<Suspense fallback={<Loading />}><TarefasPage /></Suspense>} />

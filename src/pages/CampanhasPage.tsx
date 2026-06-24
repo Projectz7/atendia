@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/stores/appStore";
-
-const EMPRESA_ID = import.meta.env.VITE_EMPRESA_ID || "default";
+import { useToastStore } from "@/stores/toastStore";
 import {
   Send,
   Plus,
@@ -13,12 +12,16 @@ import {
   Search,
 } from "lucide-react";
 
+const EMPRESA_ID = import.meta.env.VITE_EMPRESA_ID || "default";
+
 type FiltroStatus = "todas" | "pendente" | "enviado" | "falhou";
 
 export default function CampanhasPage() {
-  const { campanhas, addCampanha, updateCampanhaStatus } = useAppStore();
+  const { campanhas, carregarCampanhas, addCampanha, updateCampanhaStatus, loadingCampanhas } = useAppStore();
+  const { addToast } = useToastStore();
   const [filtro, setFiltro] = useState<FiltroStatus>("todas");
   const [mostrarNovo, setMostrarNovo] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { carregarCampanhas(EMPRESA_ID); }, []);
   const [novoNumero, setNovoNumero] = useState("");
@@ -27,23 +30,39 @@ export default function CampanhasPage() {
 
   const filtradas = filtro === "todas" ? campanhas : campanhas.filter((c) => c.status === filtro);
 
-  const handleNovoDisparo = (e: React.FormEvent) => {
+  const handleNovoDisparo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!novoNumero.trim() || !novaMensagem.trim()) return;
-    addCampanha({
-      id: `cmp-${Date.now()}`,
-      empresa_id: "emp-1",
-      whatsapp_numero: novoNumero,
-      cliente_nome: novoNome || "Desconhecido",
-      mensagem_base: novaMensagem,
-      status: "pendente",
-      enviado_em: null,
-      created_at: new Date().toISOString(),
-    });
-    setNovoNumero("");
-    setNovoNome("");
-    setNovaMensagem("");
-    setMostrarNovo(false);
+    setSubmitting(true);
+    try {
+      await addCampanha({
+        id: `cmp-${Date.now()}`,
+        empresa_id: "emp-1",
+        whatsapp_numero: novoNumero,
+        cliente_nome: novoNome || "Desconhecido",
+        mensagem_base: novaMensagem,
+        status: "pendente",
+        enviado_em: null,
+        created_at: new Date().toISOString(),
+      });
+      addToast("success", "Disparo adicionado à fila!");
+      setNovoNumero("");
+      setNovoNome("");
+      setNovaMensagem("");
+      setMostrarNovo(false);
+    } catch {
+      addToast("error", "Erro ao adicionar disparo");
+    }
+    setSubmitting(false);
+  };
+
+  const handleStatus = async (id: string, status: "enviado" | "falhou") => {
+    try {
+      await updateCampanhaStatus(id, status);
+      addToast("success", `Campanha marcada como ${status === "enviado" ? "enviada" : "falha"}`);
+    } catch {
+      addToast("error", "Erro ao atualizar status");
+    }
   };
 
   const statusConfig = {
@@ -52,6 +71,23 @@ export default function CampanhasPage() {
     enviado: { icon: CheckCircle2, color: "#22c55e", label: "Enviado" },
     falhou: { icon: XCircle, color: "#ef4444", label: "Falhou" },
   };
+
+  if (loadingCampanhas) {
+    return (
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="h-7 w-48 bg-surface rounded animate-pulse mb-4" />
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-surface rounded-xl border border-border p-4">
+              <div className="h-5 w-32 bg-surface-hover rounded animate-pulse mb-2" />
+              <div className="h-4 w-64 bg-surface-hover rounded animate-pulse mb-2" />
+              <div className="h-3 w-24 bg-surface-hover rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
@@ -115,8 +151,10 @@ export default function CampanhasPage() {
           <div className="flex gap-2">
             <button
               type="submit"
-              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
+              disabled={submitting}
+              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors flex items-center gap-2 disabled:opacity-60"
             >
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               Adicionar à Fila
             </button>
             <button
@@ -167,7 +205,7 @@ export default function CampanhasPage() {
             return (
               <div
                 key={campanha.id}
-                className="bg-surface rounded-xl border border-border p-4"
+                className="bg-surface rounded-xl border border-border p-4 hover:border-primary/20 transition-colors"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -194,22 +232,22 @@ export default function CampanhasPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {campanha.status === "pendente" && (
-                      <button
-                        onClick={() => updateCampanhaStatus(campanha.id, "enviado")}
-                        className="p-2 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-colors"
-                        title="Marcar como enviado"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                      </button>
-                    )}
-                    {campanha.status === "pendente" && (
-                      <button
-                        onClick={() => updateCampanhaStatus(campanha.id, "falhou")}
-                        className="p-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-colors"
-                        title="Marcar como falha"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleStatus(campanha.id, "enviado")}
+                          className="p-2 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-colors"
+                          title="Marcar como enviado"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleStatus(campanha.id, "falhou")}
+                          className="p-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-colors"
+                          title="Marcar como falha"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                     <span
                       className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg whitespace-nowrap"
