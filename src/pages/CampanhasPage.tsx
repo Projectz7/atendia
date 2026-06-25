@@ -9,7 +9,6 @@ import {
   Loader2,
   Clock,
   Filter,
-  Search,
 } from "lucide-react";
 
 const EMPRESA_ID = import.meta.env.VITE_EMPRESA_ID || "default";
@@ -37,7 +36,7 @@ export default function CampanhasPage() {
     try {
       await addCampanha({
         id: `cmp-${Date.now()}`,
-        empresa_id: "emp-1",
+        empresa_id: EMPRESA_ID,
         whatsapp_numero: novoNumero,
         cliente_nome: novoNome || "Desconhecido",
         mensagem_base: novaMensagem,

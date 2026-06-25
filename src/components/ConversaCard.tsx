@@ -56,7 +56,7 @@ export function ConversaCard({ conversa, ativa, onClick }: Props) {
             <span className="font-medium truncate">{conversa.cliente_nome}</span>
             <span
               className="text-[10px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap"
-              style={{ background: st.color + "20", color: st.color }}
+              style={{ background: `color-mix(in srgb, ${st.color} 20%, transparent)`, color: st.color }}
             >
               {st.label}
             </span>

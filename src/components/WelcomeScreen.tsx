@@ -1,4 +1,4 @@
-import { Bot, MessageSquare, Send, Calendar, Sparkles, ArrowRight } from "lucide-react";
+import { Bot, Send, Calendar, Sparkles, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const steps = [
@@ -19,7 +19,7 @@ const steps = [
   {
     icon: Send,
     title: "Crie campanhas",
-    desc: "Dispare mensagens em lote com delay anti-spam",
+    desc: "Dispare mensagens em lote com delay anti-spam automático",
     link: "/campanhas",
     color: "#3b82f6",
   },
@@ -31,8 +31,6 @@ const steps = [
     color: "#f59e0b",
   },
 ];
-
-import { MessageCircle } from "lucide-react";
 
 export function WelcomeScreen() {
   const navigate = useNavigate();

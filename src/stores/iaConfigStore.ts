@@ -12,9 +12,11 @@ interface IAConfigState {
   saveConfig: (tipo: "atendimento" | "funcoes", campos: Partial<IAConfiguracao>) => Promise<void>;
 }
 
+const FALLBACK_EMPRESA = import.meta.env.VITE_EMPRESA_ID || "default";
+
 const configPadrao: IAConfiguracao = {
   id: "",
-  empresa_id: "emp-1",
+  empresa_id: FALLBACK_EMPRESA,
   tipo: "atendimento",
   provedor: "local",
   modelo: "llama3.2",
@@ -63,7 +65,7 @@ export const useIAConfigStore = create<IAConfigState>((set, get) => ({
   saveConfig: async (tipo, campos) => {
     set({ saving: true });
     const config = tipo === "atendimento" ? get().configAtendimento : get().configFuncoes;
-    const empresaId = config?.empresa_id || "emp-1";
+    const empresaId = config?.empresa_id || FALLBACK_EMPRESA;
 
     try {
       const payload = { empresa_id: empresaId, tipo, ...campos };

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
 
 interface Props {
@@ -10,6 +10,10 @@ interface Props {
 export function ChatInput({ onSend, modoIA, onToggleModo }: Props) {
   const [texto, setTexto] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +29,13 @@ export function ChatInput({ onSend, modoIA, onToggleModo }: Props) {
         <button
           type="button"
           onClick={onToggleModo}
-          className={`p-2 rounded-lg transition-colors ${
-            modoIA ? "bg-ia/20 text-ia" : "bg-humano/20 text-humano"
-          }`}
+          className={`p-2 rounded-lg transition-colors`}
+          style={{
+            background: modoIA
+              ? "color-mix(in srgb, var(--color-ia) 20%, transparent)"
+              : "color-mix(in srgb, var(--color-humano) 20%, transparent)",
+            color: modoIA ? "var(--color-ia)" : "var(--color-humano)",
+          }}
           title={modoIA ? "Respondendo como IA" : "Respondendo como Humano"}
         >
           {modoIA ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}

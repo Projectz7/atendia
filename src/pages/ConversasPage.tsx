@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useChatStore } from "@/stores/chatStore";
 import { ConversaCard } from "@/components/ConversaCard";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatInput } from "@/components/ChatInput";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { useRealtimeChat } from "@/hooks/useRealtimeChat";
 import { MessageSquare, Bot, Search } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const EMPRESA_ID = import.meta.env.VITE_EMPRESA_ID || "default";
 
@@ -13,6 +15,7 @@ const filtros = [
   { label: "IA Atendimento", value: "ia_atendimento" },
   { label: "IA Funções", value: "ia_funcoes" },
   { label: "Humano", value: "humano" },
+  { label: "Fechado", value: "fechado" },
 ] as const;
 
 export default function ConversasPage() {
@@ -28,7 +31,10 @@ export default function ConversasPage() {
   } = useChatStore();
 
   const [filtroAtivo, setFiltroAtivo] = useState<string>("todas");
+  const [buscaQuery, setBuscaQuery] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useRealtimeChat(EMPRESA_ID);
 
   useEffect(() => {
     carregarConversas(EMPRESA_ID);
@@ -56,15 +62,20 @@ export default function ConversasPage() {
       : conversaAtiva.status === "humano" ? "ia_atendimento"
       : "ia_atendimento";
     updateConversaStatus(conversaAtiva.id, novoStatus);
-    import("@/lib/supabase").then(({ supabase }) => {
-      supabase.from("conversas").update({ status: novoStatus }).eq("id", conversaAtiva.id);
-    });
+    supabase.from("conversas").update({ status: novoStatus }).eq("id", conversaAtiva.id);
   };
 
-  const conversasFiltradas =
-    filtroAtivo === "todas"
-      ? conversas
-      : conversas.filter((c) => c.status === filtroAtivo);
+  const conversasFiltradas = useMemo(() => {
+    const busca = buscaQuery.toLowerCase().trim();
+    return conversas.filter((c) => {
+      if (filtroAtivo !== "todas" && c.status !== filtroAtivo) return false;
+      if (!busca) return true;
+      return (
+        c.cliente_nome.toLowerCase().includes(busca) ||
+        c.whatsapp_numero.includes(busca)
+      );
+    });
+  }, [conversas, filtroAtivo, buscaQuery]);
 
   if (loading) {
     return (
@@ -93,6 +104,8 @@ export default function ConversasPage() {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
+              value={buscaQuery}
+              onChange={(e) => setBuscaQuery(e.target.value)}
               placeholder="Buscar conversas..."
               className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-sm outline-none focus:border-primary transition-colors"
             />
@@ -122,13 +135,14 @@ export default function ConversasPage() {
               </div>
             )
           ) : (
-            conversasFiltradas.map((c) => (
-              <ConversaCard
-                key={c.id}
-                conversa={c}
-                ativa={conversaAtiva?.id === c.id}
-                onClick={() => setConversaAtiva(c)}
-              />
+            conversasFiltradas.map((c, i) => (
+              <div key={c.id} className="animate-slide-up" style={{ animationDelay: `${i * 30}ms` }}>
+                <ConversaCard
+                  conversa={c}
+                  ativa={conversaAtiva?.id === c.id}
+                  onClick={() => setConversaAtiva(c)}
+                />
+              </div>
             ))
           )}
         </div>
@@ -144,7 +158,7 @@ export default function ConversasPage() {
               <div className="min-w-0">
                 <h3 className="font-medium truncate">{conversaAtiva.cliente_nome}</h3>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className={conversaAtiva.status === "ia_atendimento" ? "text-ia" : conversaAtiva.status === "ia_funcoes" ? "text-yellow-500" : "text-humano"}>
+                  <span style={{ color: conversaAtiva.status === "ia_atendimento" ? "var(--color-ia)" : conversaAtiva.status === "ia_funcoes" ? "#eab308" : "var(--color-humano)" }}>
                     {conversaAtiva.status === "ia_atendimento" ? "🤖 IA respondendo" : conversaAtiva.status === "ia_funcoes" ? "🔧 IA executando funções" : "👤 Atendimento humano"}
                   </span>
                   {conversaAtiva.resumo_motivo && (
@@ -158,9 +172,23 @@ export default function ConversasPage() {
             </div>
             <button
               onClick={handleToggleStatus}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ml-2 ${
-                modoIA ? "bg-humano/20 text-humano hover:bg-humano/30" : "bg-ia/20 text-ia hover:bg-ia/30"
-              }`}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ml-2"
+              style={{
+                background: modoIA
+                  ? "color-mix(in srgb, var(--color-humano) 20%, transparent)"
+                  : "color-mix(in srgb, var(--color-ia) 20%, transparent)",
+                color: modoIA ? "var(--color-humano)" : "var(--color-ia)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = modoIA
+                  ? "color-mix(in srgb, var(--color-humano) 30%, transparent)"
+                  : "color-mix(in srgb, var(--color-ia) 30%, transparent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = modoIA
+                  ? "color-mix(in srgb, var(--color-humano) 20%, transparent)"
+                  : "color-mix(in srgb, var(--color-ia) 20%, transparent)";
+              }}
             >
               {modoIA ? "Assumir atendimento" : "Voltar para IA"}
             </button>
@@ -176,15 +204,17 @@ export default function ConversasPage() {
               mensagens.map((m) => <ChatMessage key={m.id} mensagem={m} />)
             )}
           </div>
-          <ChatInput onSend={handleSend} modoIA={modoIA} onToggleModo={handleToggleStatus} />
+          <ChatInput key={conversaAtiva.id} onSend={handleSend} modoIA={modoIA} onToggleModo={handleToggleStatus} />
         </div>
       ) : conversas.length === 0 ? (
         <WelcomeScreen />
       ) : (
-        <div className="flex-1 flex items-center justify-center text-text-muted">
+        <div className="flex-1 flex items-center justify-center text-text-muted animate-fade-in">
           <div className="text-center">
-            <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-20" />
-            <p className="text-lg">Selecione uma conversa</p>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-surface border border-border flex items-center justify-center">
+              <MessageSquare className="w-8 h-8 opacity-40" />
+            </div>
+            <p className="text-lg font-medium text-text">Selecione uma conversa</p>
             <p className="text-sm mt-1">Escolha uma conversa à esquerda para começar</p>
           </div>
         </div>

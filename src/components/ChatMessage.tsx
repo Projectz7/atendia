@@ -20,7 +20,7 @@ export function ChatMessage({ mensagem }: Props) {
     <div className={`flex gap-3 ${isCliente ? "" : "flex-row-reverse"}`}>
       <div
         className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-        style={{ background: agent.color + "20" }}
+        style={{ background: `color-mix(in srgb, ${agent.color} 20%, transparent)` }}
       >
         <Icon className="w-4 h-4" style={{ color: agent.color }} />
       </div>
@@ -29,7 +29,7 @@ export function ChatMessage({ mensagem }: Props) {
         <div
           className="px-4 py-2.5 rounded-2xl text-sm leading-relaxed"
           style={{
-            background: isCliente ? "var(--color-surface)" : agent.color + "15",
+            background: isCliente ? "var(--color-surface)" : `color-mix(in srgb, ${agent.color} 15%, transparent)`,
             color: "var(--color-text)",
             borderBottomLeftRadius: isCliente ? "4px" : "1rem",
             borderBottomRightRadius: isCliente ? "1rem" : "4px",

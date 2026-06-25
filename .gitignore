@@ -25,3 +25,5 @@ dist-ssr
 *.sw?
 
 .vercel
+_lyora/
+arquivo_*.py

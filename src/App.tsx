@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { useAuthStore } from "@/stores/authStore";
 import { ToastContainer } from "@/components/Toast";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
@@ -48,15 +49,15 @@ export default function App() {
     <BrowserRouter>
       <ToastContainer />
       <Routes>
-        <Route path="/login" element={<Suspense fallback={<Loading />}><LoginPage /></Suspense>} />
+        <Route path="/login" element={<Suspense fallback={<Loading />}><ErrorBoundary><LoginPage /></ErrorBoundary></Suspense>} />
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Suspense fallback={<Loading />}><ConversasPage /></Suspense>} />
-          <Route path="/campanhas" element={<Suspense fallback={<Loading />}><CampanhasPage /></Suspense>} />
-          <Route path="/tarefas" element={<Suspense fallback={<Loading />}><TarefasPage /></Suspense>} />
-          <Route path="/config-ia-atendimento" element={<Suspense fallback={<Loading />}><ConfigIAPage /></Suspense>} />
-          <Route path="/config-ia-funcoes" element={<Suspense fallback={<Loading />}><ConfigIAPage /></Suspense>} />
-          <Route path="/config-whatsapp" element={<Suspense fallback={<Loading />}><ConfigWhatsAppPage /></Suspense>} />
-          <Route path="/config-mcp" element={<Suspense fallback={<Loading />}><ConfigMCPPage /></Suspense>} />
+          <Route index element={<Suspense fallback={<Loading />}><ErrorBoundary><ConversasPage /></ErrorBoundary></Suspense>} />
+          <Route path="/campanhas" element={<Suspense fallback={<Loading />}><ErrorBoundary><CampanhasPage /></ErrorBoundary></Suspense>} />
+          <Route path="/tarefas" element={<Suspense fallback={<Loading />}><ErrorBoundary><TarefasPage /></ErrorBoundary></Suspense>} />
+          <Route path="/config-ia-atendimento" element={<Suspense fallback={<Loading />}><ErrorBoundary><ConfigIAPage /></ErrorBoundary></Suspense>} />
+          <Route path="/config-ia-funcoes" element={<Suspense fallback={<Loading />}><ErrorBoundary><ConfigIAPage /></ErrorBoundary></Suspense>} />
+          <Route path="/config-whatsapp" element={<Suspense fallback={<Loading />}><ErrorBoundary><ConfigWhatsAppPage /></ErrorBoundary></Suspense>} />
+          <Route path="/config-mcp" element={<Suspense fallback={<Loading />}><ErrorBoundary><ConfigMCPPage /></ErrorBoundary></Suspense>} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -39,7 +39,7 @@ export default function TarefasPage() {
     try {
       await addTarefa({
         id: `tar-${Date.now()}`,
-        empresa_id: "emp-1",
+        empresa_id: EMPRESA_ID,
         conversa_id: null,
         titulo: novoTitulo,
         descricao: novaDescricao,
@@ -169,24 +169,16 @@ export default function TarefasPage() {
                   <button
                     type="button"
                     onClick={() => setNovaIa(true)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      novaIa
-                        ? "bg-ia/20 text-ia"
-                        : "bg-surface-hover text-text-muted"
-                    }`}
-                  >
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
+                    style={novaIa ? { background: "color-mix(in srgb, var(--color-ia) 20%, transparent)", color: "var(--color-ia)" } : {}}>
                     <Bell className="w-4 h-4" />
                     Sim
                   </button>
                   <button
                     type="button"
                     onClick={() => setNovaIa(false)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      !novaIa
-                        ? "bg-humano/20 text-humano"
-                        : "bg-surface-hover text-text-muted"
-                    }`}
-                  >
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
+                    style={!novaIa ? { background: "color-mix(in srgb, var(--color-humano) 20%, transparent)", color: "var(--color-humano)" } : {}}>
                     <BellOff className="w-4 h-4" />
                     Não (manual)
                   </button>
@@ -262,11 +254,13 @@ export default function TarefasPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-medium">{tarefa.titulo}</span>
                       {tarefa.executar_via_ia ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-ia/20 text-ia">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                          style={{ background: "color-mix(in srgb, var(--color-ia) 20%, transparent)", color: "var(--color-ia)" }}>
                           🤖 IA
                         </span>
                       ) : (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-humano/20 text-humano">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                          style={{ background: "color-mix(in srgb, var(--color-humano) 20%, transparent)", color: "var(--color-humano)" }}>
                           👤 Manual
                         </span>
                       )}
