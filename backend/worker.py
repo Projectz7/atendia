@@ -7,7 +7,7 @@ from vision import executar_llama_vision_local
 from triagem import executar_triagem_cognitiva
 from transbordo import executar_transbordo_humano
 from ollama import chamar_ollama_api
-from config import LLM_MODEL, OLLAMA_ENDPOINT
+from config import settings
 
 logger = logging.getLogger("AtendIA.Worker")
 
